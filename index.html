@@ -5,106 +5,186 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blog API Interface</title>
     <style>
+      :root {
+        --bg: #f2f2f7;
+        --card: #ffffff;
+        --accent: #007aff;
+      }
       body {
-        font-family: Arial, sans-serif;
-        max-width: 600px;
-        margin: auto;
+        font-family: -apple-system, sans-serif;
+        background: var(--bg);
         padding: 20px;
-        background-color: #f9f9f9;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .container {
+        width: 100%;
+        max-width: 500px;
       }
       .card {
-        background: white;
-        padding: 15px;
-        margin-bottom: 15px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: var(--card);
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
       }
       input,
       textarea {
         width: 100%;
-        margin: 10px 0;
-        padding: 8px;
+        padding: 12px;
+        margin: 8px 0;
+        border: 1px solid #ddd;
+        border-radius: 10px;
         box-sizing: border-box;
       }
       button {
-        background-color: #007bff;
+        width: 100%;
+        padding: 12px;
+        background: var(--accent);
         color: white;
         border: none;
-        padding: 10px;
+        border-radius: 10px;
+        font-weight: bold;
         cursor: pointer;
-        border-radius: 4px;
       }
-      button.delete {
-        background-color: #dc3545;
+      .blog-post {
+        background: var(--card);
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        position: relative;
+      }
+      .author {
+        font-size: 0.8em;
+        color: gray;
+      }
+      .actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+      }
+      .btn-edit {
+        background: #5856d6;
+        flex: 1;
+        padding: 5px;
+        color: white;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+      }
+      .btn-delete {
+        background: #ff3b30;
+        flex: 1;
+        padding: 5px;
+        color: white;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
       }
     </style>
   </head>
   <body>
-    <h1>Blog Manager</h1>
+    <div class="container">
+      <h1 id="form-title">New Post</h1>
+      <div class="card">
+        <input type="hidden" id="postId" />
+        <input type="text" id="title" placeholder="Title" />
+        <textarea id="body" placeholder="Content" rows="3"></textarea>
+        <input type="text" id="author" placeholder="Author (optional)" />
+        <button id="submitBtn" onclick="handleButtonClick()">
+          Submit Post
+        </button>
+        <button
+          id="cancelBtn"
+          onclick="resetForm()"
+          style="display: none; background: #8e8e93; margin-top: 5px"
+        >
+          Cancel
+        </button>
+      </div>
 
-    <div class="card">
-      <h3>Create Post</h3>
-      <input type="text" id="title" placeholder="Title (Required)" />
-      <input
-        type="text"
-        id="author"
-        placeholder="Author (Default: Anonymous)"
-      />
-      <textarea id="body" placeholder="Body (Required)"></textarea>
-      <button onclick="createPost()">Submit</button>
+      <h1>All Posts</h1>
+      <div id="blogsList"></div>
     </div>
-
-    <div id="blog-list"></div>
 
     <script>
       const API_URL = "http://localhost:3000/blogs";
 
-      async function fetchPosts() {
-        const response = await fetch(API_URL);
-        const blogs = await response.json();
-        const list = document.getElementById("blog-list");
-        list.innerHTML = "<h3>All Posts</h3>";
-
+      async function fetchBlogs() {
+        const res = await fetch(API_URL);
+        const blogs = await res.json();
+        const list = document.getElementById("blogsList");
+        list.innerHTML = "";
         blogs.forEach((blog) => {
           list.innerHTML += `
-                    <div class="card">
-                        <h4>${blog.title}</h4>
-                        <p><strong>By:</strong> ${blog.author}</p>
-                        <p>${blog.body}</p>
-                        <button class="delete" onclick="deletePost('${blog._id}')">Delete</button>
+                <div class="blog-post">
+                    <h3>${blog.title}</h3>
+                    <p>${blog.body}</p>
+                    <p class="author">By: ${blog.author}</p>
+                    <div class="actions">
+                        <button class="btn-edit" onclick="editPost('${blog._id}', '${blog.title}', \`${blog.body}\`, '${blog.author}')">Edit</button>
+                        <button class="btn-delete" onclick="deletePost('${blog._id}')">Delete</button>
                     </div>
-                `;
+                </div>
+            `;
         });
       }
 
-      async function createPost() {
-        const title = document.getElementById("title").value;
-        const body = document.getElementById("body").value;
-        const author = document.getElementById("author").value;
+      function editPost(id, title, body, author) {
+        document.getElementById("postId").value = id;
+        document.getElementById("title").value = title;
+        document.getElementById("body").value = body;
+        document.getElementById("author").value = author;
 
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, body, author: author || undefined }),
-        });
+        document.getElementById("form-title").innerText = "Edit Post";
+        document.getElementById("submitBtn").innerText = "Update Post";
+        document.getElementById("cancelBtn").style.display = "block";
+      }
 
-        if (res.ok) {
-          document.getElementById("title").value = "";
-          document.getElementById("body").value = "";
-          document.getElementById("author").value = "";
-          fetchPosts();
+      function resetForm() {
+        document.getElementById("postId").value = "";
+        document.getElementById("title").value = "";
+        document.getElementById("body").value = "";
+        document.getElementById("author").value = "";
+        document.getElementById("form-title").innerText = "New Post";
+        document.getElementById("submitBtn").innerText = "Submit Post";
+        document.getElementById("cancelBtn").style.display = "none";
+      }
+
+      async function handleButtonClick() {
+        const id = document.getElementById("postId").value;
+        const data = {
+          title: document.getElementById("title").value,
+          body: document.getElementById("body").value,
+          author: document.getElementById("author").value,
+        };
+
+        if (id) {
+          await fetch(`${API_URL}/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
         } else {
-          const err = await res.json();
-          alert("Error: " + err.message);
+          await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
         }
+        resetForm();
+        fetchBlogs();
       }
 
       async function deletePost(id) {
-        await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-        fetchPosts();
+        if (confirm("Delete this post?")) {
+          await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+          fetchBlogs();
+        }
       }
 
-      fetchPosts();
+      fetchBlogs();
     </script>
   </body>
 </html>
